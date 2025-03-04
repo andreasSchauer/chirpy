@@ -1,10 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
-	"database/sql"
 	"sync/atomic"
 
 	"github.com/andreasSchauer/chirpy/internal/database"
@@ -12,12 +12,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
-
 type apiConfig struct {
-	fileserverHits 	atomic.Int32
-	db				*database.Queries
+	fileserverHits atomic.Int32
+	db             *database.Queries
+	platform       string
 }
-
 
 func main() {
 	const filepathRoot = "."
@@ -29,15 +28,23 @@ func main() {
 		log.Fatal("DB_URL must be set")
 	}
 
+	platform := os.Getenv("PLATFORM")
+	if platform == "" {
+		log.Fatal("PLATFORM must be set")
+	}
+
 	dbConn, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Error opening database: %s", err)
 	}
 	dbQueries := database.New(dbConn)
 
+	
+
 	apiCfg := apiConfig{
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
+		platform:       platform,
 	}
 
 	mux := http.NewServeMux()
@@ -46,6 +53,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("POST /api/validate_chirp", handlerChirpsValidate)
+	mux.HandleFunc("POST /api/users", apiCfg.handlerUsersCreate)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
