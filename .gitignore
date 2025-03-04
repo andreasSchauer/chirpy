@@ -1,3 +1,4 @@
-out
-.DS_Store
 api_test.http
+.env
+.DS_Store
+out
