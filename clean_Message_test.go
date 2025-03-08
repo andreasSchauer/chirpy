@@ -5,6 +5,12 @@ import (
 )
 
 func TestCleanMessage(t *testing.T) {
+	badWords := map[string]struct{}{
+		"kerfuffle": {},
+		"sharbert":  {},
+		"fornax":    {},
+	}
+
 	tests := []struct {
 		name         	string
 		inputMessage    string
@@ -39,7 +45,7 @@ func TestCleanMessage(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := cleanMessage(tc.inputMessage)
+			actual := getCleanedBody(tc.inputMessage, badWords)
 			if actual != tc.expected {
 				t.Errorf("Test %v - %s FAIL: expected Message: %v, actual: %v", i, tc.name, tc.expected, actual)
 			}
