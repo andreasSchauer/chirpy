@@ -2,11 +2,88 @@ package auth
 
 import (
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 
+func TestJWT(t *testing.T) {
+	validSecretKey := "my-secret-test-key"
+	correctUserID := uuid.New()
+
+	validToken, err := MakeJWT(correctUserID, validSecretKey, time.Hour)
+	if err != nil {
+		t.Fatalf("couldn't create tokenString: %v", err)
+	}
+
+	expiredToken, err := MakeJWT(correctUserID, validSecretKey, time.Millisecond)
+	if err != nil {
+		t.Fatalf("couldn't create expired token: %v", err)
+	}
+	time.Sleep(time.Millisecond * 10)
+
+	tests := []struct {
+		name     		string
+		tokenSecret   	string
+		tokenString		string
+		wantUserID		uuid.UUID
+		wantErr  		bool
+	}{
+		{
+			name:		  "Correct Key and Token",
+			tokenSecret:  validSecretKey,
+			tokenString:  validToken,
+			wantUserID:   correctUserID,
+			wantErr: 	  false,
+		},
+		{
+			name:		  "Wrong Key, Correct Token",
+			tokenSecret:  "wrong-key",
+			tokenString:  validToken,
+			wantUserID:   uuid.Nil,
+			wantErr: 	  true,
+		},
+		{
+			name:		  "Invalid token",
+			tokenSecret:  validSecretKey,
+			tokenString:  "wrong tokenString",
+			wantUserID:   uuid.Nil,
+			wantErr: 	  true,
+		},
+		{
+			name:		  "Expired token",
+			tokenSecret:  validSecretKey,
+			tokenString:  expiredToken,
+			wantUserID:   uuid.Nil,
+			wantErr: 	  true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			userID, err := ValidateJWT(tc.tokenString, tc.tokenSecret)
+			if tc.wantErr {
+				if err == nil {
+					t.Error("ValidateJWT(): expected error but got none")
+				}
+				return
+			} else {
+				if err != nil {
+					t.Errorf("ValidateJWT(): unexpected error: %v", err)
+					return
+				}
+				
+				if userID != tc.wantUserID {
+					t.Errorf("ValidateJWT(): got userID %v, want %v", userID, tc.wantUserID)
+				}
+			}
+		})
+	}
+}
+
+
 func TestCheckPasswordHash(t *testing.T) {
-	// First, we need to create some hashed passwords for testing
 	password1 := "correctPassword123!"
 	password2 := "anotherPassword456!"
 	hash1, _ := HashPassword(password1)
@@ -50,11 +127,11 @@ func TestCheckPasswordHash(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := CheckPasswordHash(tt.password, tt.hash)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("CheckPasswordHash() error = %v, wantErr %v", err, tt.wantErr)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := CheckPasswordHash(tc.password, tc.hash)
+			if (err != nil) != tc.wantErr {
+				t.Errorf("CheckPasswordHash() error = %v, wantErr %v", err, tc.wantErr)
 			}
 		})
 	}
