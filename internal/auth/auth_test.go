@@ -1,11 +1,85 @@
 package auth
 
 import (
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+
+func TestGetBearerToken(t *testing.T) {
+	tests := []struct {
+		name		string
+		expected	string
+		wantErr		bool
+		input		http.Header
+	}{
+		{
+			name: "contains bearer token",
+			expected: "sometokenstring123",
+			wantErr: false,
+			input: http.Header{
+				"Authorization": []string{"Bearer sometokenstring123"},
+			},
+		},
+		{
+			name: "empty bearer token",
+			expected: "",
+			wantErr: false,
+			input: http.Header{
+				"Authorization": []string{"Bearer "},
+			},
+		},
+		{
+			name: "empty authorization header",
+			expected: "",
+			wantErr: true,
+			input: http.Header{
+				"Authorization": []string{},
+			},
+		},
+		{
+			name: "no authorization header",
+			expected: "",
+			wantErr: true,
+			input: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+		},
+		{
+			name: "no bearer token",
+			expected: "",
+			wantErr: true,
+			input: http.Header{
+				"Authorization": []string{"invalidbearer sometokenstring123"},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			bearerToken, err := GetBearerToken(tc.input)
+			if tc.wantErr {
+				if err == nil {
+					t.Error("GetBearerToken(): expected error but got none")
+				}
+				return
+			} 
+
+			if err != nil {
+				t.Errorf("GetBearerToken(): unexpected error: %v", err)
+				return
+			}
+			
+			if bearerToken != tc.expected {
+				t.Errorf("GetBearerToken(): got token %v, want %v", bearerToken, tc.expected)
+			}
+			
+		})
+	}
+}
 
 
 func TestJWT(t *testing.T) {
@@ -68,15 +142,15 @@ func TestJWT(t *testing.T) {
 					t.Error("ValidateJWT(): expected error but got none")
 				}
 				return
-			} else {
-				if err != nil {
-					t.Errorf("ValidateJWT(): unexpected error: %v", err)
-					return
-				}
-				
-				if userID != tc.wantUserID {
-					t.Errorf("ValidateJWT(): got userID %v, want %v", userID, tc.wantUserID)
-				}
+			}
+
+			if err != nil {
+				t.Errorf("ValidateJWT(): unexpected error: %v", err)
+				return
+			}
+			
+			if userID != tc.wantUserID {
+				t.Errorf("ValidateJWT(): got userID %v, want %v", userID, tc.wantUserID)
 			}
 		})
 	}
