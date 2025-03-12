@@ -8,11 +8,10 @@ import (
 	"github.com/andreasSchauer/chirpy/internal/database"
 )
 
-
 func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Password 	string `json:"password"`
-		Email 		string `json:"email"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	type response struct {
@@ -25,7 +24,7 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, err := auth.ValidateJWT(token, cfg.JWTSecret)
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT", err)
 		return
@@ -46,8 +45,8 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 	}
 
 	user, err := cfg.db.UpdateUser(r.Context(), database.UpdateUserParams{
-		ID: 			userID,
-		Email: 			params.Email,
+		ID:             userID,
+		Email:          params.Email,
 		HashedPassword: hashedPassword,
 	})
 	if err != nil {
@@ -57,10 +56,11 @@ func (cfg *apiConfig) handlerUsersUpdate(w http.ResponseWriter, r *http.Request)
 
 	respondWithJSON(w, http.StatusOK, response{
 		User: User{
-			ID:        user.ID,
-			CreatedAt: user.CreatedAt,
-			UpdatedAt: user.UpdatedAt,
-			Email:     user.Email,
+			ID:          user.ID,
+			CreatedAt:   user.CreatedAt,
+			UpdatedAt:   user.UpdatedAt,
+			Email:       user.Email,
+			IsChirpyRed: user.IsChirpyRed,
 		},
 	})
 }

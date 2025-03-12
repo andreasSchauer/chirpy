@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 func (cfg *apiConfig) handlerChirpsDelete(w http.ResponseWriter, r *http.Request) {
 	chirpIDString := r.PathValue("chirpID")
 	chirpID, err := uuid.Parse(chirpIDString)
@@ -15,14 +14,14 @@ func (cfg *apiConfig) handlerChirpsDelete(w http.ResponseWriter, r *http.Request
 		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID", err)
 		return
 	}
-	
+
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't find JWT", err)
 		return
 	}
 
-	userID, err := auth.ValidateJWT(token, cfg.JWTSecret)
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT", err)
 		return

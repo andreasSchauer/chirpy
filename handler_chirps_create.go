@@ -22,7 +22,7 @@ type Chirp struct {
 
 func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body   string    `json:"body"`
+		Body string `json:"body"`
 	}
 
 	token, err := auth.GetBearerToken(r.Header)
@@ -31,7 +31,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	userID, err := auth.ValidateJWT(token, cfg.JWTSecret)
+	userID, err := auth.ValidateJWT(token, cfg.jwtSecret)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Couldn't validate JWT", err)
 		return
@@ -52,7 +52,7 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 	}
 
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
-		Body: cleaned,
+		Body:   cleaned,
 		UserID: userID,
 	})
 	if err != nil {
@@ -69,14 +69,12 @@ func (cfg *apiConfig) handlerChirpsCreate(w http.ResponseWriter, r *http.Request
 	})
 }
 
-
-
 func validateChirp(body string) (string, error) {
 	const maxChirpLength = 140
 	if len(body) > maxChirpLength {
 		return "", errors.New("Chirp is too long")
 	}
-	
+
 	badWords := map[string]struct{}{
 		"kerfuffle": {},
 		"sharbert":  {},
@@ -85,9 +83,8 @@ func validateChirp(body string) (string, error) {
 
 	cleaned := getCleanedBody(body, badWords)
 	return cleaned, nil
-	
-}
 
+}
 
 func getCleanedBody(body string, badWords map[string]struct{}) string {
 	words := strings.Split(body, " ")

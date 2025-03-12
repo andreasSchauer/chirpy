@@ -16,7 +16,8 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
-	JWTSecret      string
+	jwtSecret      string
+	polkaKey	   string
 }
 
 func main() {
@@ -34,9 +35,14 @@ func main() {
 		log.Fatal("PLATFORM must be set")
 	}
 
-	JWTSecret := os.Getenv("JWT_SECRET")
-	if JWTSecret == "" {
-		log.Fatal("JWT_SECRET must be set")
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("JWT_SECRET environment variable is not set")
+	}
+
+	polkaKey := os.Getenv("POLKA_KEY")
+	if polkaKey == "" {
+		log.Fatal("POLKA_KEY environment variable is not set")
 	}
 
 	dbConn, err := sql.Open("postgres", dbURL)
@@ -49,7 +55,8 @@ func main() {
 		fileserverHits: atomic.Int32{},
 		db:             dbQueries,
 		platform:       platform,
-		JWTSecret:      JWTSecret,
+		jwtSecret:      jwtSecret,
+		polkaKey: 		polkaKey,
 	}
 
 	mux := http.NewServeMux()
@@ -67,6 +74,8 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerChirpsRetrieve)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerChirpsGet)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.handlerChirpsDelete)
+
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.handlerWebhook)
 
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetrics)
